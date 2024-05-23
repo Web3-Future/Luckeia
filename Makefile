@@ -2,7 +2,7 @@
 
 # Variables
 REPO_URL = https://github.com/Web3-Future/lucky-chain.git
-DIR = lucky-chain
+DIR = contract
 
 .PHONY: all clone install compile deploy clean
 
