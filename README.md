@@ -36,8 +36,7 @@ To get started with Lucky-Chain, follow these steps.
 - Foundry
 
 ### Installation
-
 Clone the repository and install dependencies:
 - `git clone https://github.com/Web3-Future/lucky-chain.git`
-- `cd lucky-chain`
+- `cd contract`
 - `forge install`
