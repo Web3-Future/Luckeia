@@ -1,5 +1,8 @@
 # Lucky-Chain
-![Lucky-Chain Logo](./public/imgs/lucky-chain.png)
+
+<p align="center">
+  <img src="./public/imgs/lucky-chain.png" alt="Lucky-Chain Logo" width="250" height="250">
+</p>
 
 Lucky-Chain is a decentralized drawing assistant designed to ensure fairness in drawings by utilizing Chainlink's verifiable random functions (VRF). This project supports adding whitelisted participants, making it ideal for exclusive and fair drawings.
 
