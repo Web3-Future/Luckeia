@@ -347,6 +347,12 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     /**
      * ================== StrategyD-custom ==================
      */
+    /**
+     * @dev Sets up a custom lucky draw strategy.
+     * @param customStrategyAddress The address of the custom strategy contract.
+     * @param data The data to be passed to the custom strategy contract.
+     * @return The number of the lucky draw strategy that was set up.
+     */
     function setUpLuckyDrawStrategyCustom(address customStrategyAddress, bytes calldata data)
         external
         payable
