@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {VRFConsumerBaseV2Plus} from "chainlink/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
-import {VRFV2PlusClient} from "chainlink/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 contract LuckyDraw is VRFConsumerBaseV2Plus {
     /**
@@ -14,6 +15,17 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
 
     event LuckyDraw_RandomWordsFulfilled(uint256 indexed requestId, uint256[] randomWords);
 
+    event LuckyDraw_StrategyASetUp(
+        uint256 indexed luckyDrawNumber,
+        uint256 startTime,
+        uint256 endTime,
+        address payable[] participants,
+        uint8 maxWinners,
+        address[] openerWhitelist
+    );
+
+    event LuckyDraw_StrategyACancled(address indexed user, uint256 luckyDrawNumber);
+
     /**
      * ==================
      *  struct
@@ -23,6 +35,17 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         bool exists; // whether a requestId exists
         bool fulfilled; // whether the request has been successfully fulfilled
         uint256[] randomWords;
+    }
+
+    struct LuckyDrawRulesInfo {
+        address admin;
+        bool isOpen; // whether the lucky draw is open
+        uint256 startTime;
+        uint256 endTime;
+        uint256 amount;
+        address payable[] participants;
+        uint8 maxWinners;
+        address[] openerWhitelist;
     }
 
     /**
@@ -51,6 +74,15 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
 
     mapping(uint256 => RequestStatus) private s_requests;
 
+    // LuckyDraw unique number,will always increase
+    uint256 private s_numberOfLuckyDraw;
+
+    // key=luckyDrawNumber,value=LuckyDrawRulesInfo
+    mapping(uint256 => LuckyDrawRulesInfo) private s_luckyDrawRulesInfos;
+
+    // key=luckyDrawNumber,value=winners
+    mapping(uint256 => mapping(address => bool)) private s_winners;
+
     /**
      * ==================
      *  constructor
@@ -73,7 +105,88 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
      *  function public & external
      * ==================
      */
-    function enterRaffle() public payable {}
+    function setUpLuckyDrawStrategyA(
+        uint256 startTime,
+        uint256 endTime,
+        address payable[] calldata participants,
+        uint8 maxWinners,
+        address[] calldata openerWhitelist
+    ) external payable returns (uint256) {
+        require(startTime > block.timestamp, "startTime must be in the future");
+        require(startTime < endTime, "endTime must be after startTime");
+        require(maxWinners > 0, "maxWinners must be greater than 0");
+        require(participants.length >= maxWinners, "participants must be greater than or equal to maxWinners");
+        require(openerWhitelist.length > 0, "openerWhitelist must be greater than 0");
+        uint256 amount = msg.value;
+        require(amount > 0, "amount must be greater than 0");
+
+        // record
+        s_numberOfLuckyDraw += s_numberOfLuckyDraw;
+
+        s_luckyDrawRulesInfos[s_numberOfLuckyDraw] = LuckyDrawRulesInfo({
+            startTime: startTime,
+            endTime: endTime,
+            amount: amount,
+            participants: participants,
+            maxWinners: maxWinners,
+            openerWhitelist: openerWhitelist,
+            isOpen: true,
+            admin: msg.sender
+        });
+
+        emit LuckyDraw_StrategyASetUp(
+            s_numberOfLuckyDraw, startTime, endTime, participants, maxWinners, openerWhitelist
+        );
+
+        return s_numberOfLuckyDraw;
+    }
+
+    function openAwardsLuckyDrawStrategyA(uint256 luckyDrawNumber) external {
+        LuckyDrawRulesInfo memory luckyDrawRulesInfo = s_luckyDrawRulesInfos[luckyDrawNumber];
+        require(luckyDrawRulesInfo.isOpen, "luckyDraw is alread closed");
+        require(luckyDrawRulesInfo.endTime < block.timestamp, "luckyDraw is not ended");
+        require(_checkInWhitelist(msg.sender, luckyDrawRulesInfo.openerWhitelist), "only opener can open");
+
+        uint256 requestId = requestRandomWords(true);
+        uint8 maxWinners = luckyDrawRulesInfo.maxWinners;
+        // caculate per user rewards
+        uint256 rewardsPerUser = luckyDrawRulesInfo.amount / maxWinners;
+        uint256[] memory randomWords = s_requests[requestId].randomWords;
+        uint256 firstIndexOfWinner = randomWords[0] % luckyDrawRulesInfo.participants.length;
+        for (uint256 i = 0; i < maxWinners; i++) {
+            address payable winner = luckyDrawRulesInfo.participants[firstIndexOfWinner];
+            s_winners[luckyDrawNumber][address(winner)] = true;
+            firstIndexOfWinner += 1;
+            Address.sendValue(winner, rewardsPerUser);
+        }
+    }
+
+    function _checkInWhitelist(address user, address[] memory whitelist) internal pure returns (bool) {
+        for (uint256 i = 0; i < whitelist.length; i++) {
+            if (whitelist[i] == user) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function cancelLuckyDrawStrategyA(uint256 luckyDrawNumber) external {
+        address user = msg.sender;
+        require(s_luckyDrawRulesInfos[luckyDrawNumber].admin == user, "only admin can cancel");
+        require(s_luckyDrawRulesInfos[luckyDrawNumber].isOpen, "luckyDraw is alread closed");
+
+        s_luckyDrawRulesInfos[luckyDrawNumber].isOpen = false;
+
+        emit LuckyDraw_StrategyACancled(user, luckyDrawNumber);
+    }
+
+    function checkUserPrizeLuckyDrawStrategyA(uint256 luckyDrawNumber, address user) public view returns (bool) {
+        require(s_luckyDrawRulesInfos[luckyDrawNumber].isOpen, "luckyDraw is closed");
+        require(s_luckyDrawRulesInfos[luckyDrawNumber].startTime < block.timestamp, "luckyDraw is not started");
+
+        // check user exist
+        return s_winners[luckyDrawNumber][user];
+    }
 
     // setUpLuckyDraw
     // pickWinner
@@ -105,7 +218,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         return requestId;
     }
 
-    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
+    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
         require(s_requests[requestId].exists, "requestId not found");
         s_requests[requestId].fulfilled = true;
         s_requests[requestId].randomWords = randomWords;

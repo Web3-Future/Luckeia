@@ -8,7 +8,7 @@ contract LuckyDrawTest is Test {
     LuckyDraw public luckyDraw;
 
     function setUp() public {
-        luckyDraw = new LuckyDraw();
+        // luckyDraw = new LuckyDraw();
     }
 
     function test_Increment() public {}
