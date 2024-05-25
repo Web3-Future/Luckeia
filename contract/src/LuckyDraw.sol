@@ -121,7 +121,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     mapping(uint256 => RequestStatus) private s_requests;
 
     // LuckyDraw unique number,will always increase
-    uint256 private s_numberOfLuckyDraw;
+    uint256 private s_numberOfLuckyDraw = 0;
 
     // key=luckyDrawNumber,value=StrategyARulesInfo
     mapping(uint256 => StrategyARulesInfo) private s_strategyARulesInfos;
@@ -160,7 +160,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     function setUpLuckyDrawStrategyA(
         uint256 startTime,
         uint256 endTime,
-        address payable[] calldata participants,
+        address payable[] memory participants,
         uint8 maxWinners,
         address[] calldata openerWhitelist
     ) external payable returns (uint256) {
@@ -213,32 +213,14 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         }
     }
 
-    function _checkInWhitelist(address user, address[] memory whitelist) internal pure returns (bool) {
-        for (uint256 i = 0; i < whitelist.length; i++) {
-            if (whitelist[i] == user) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     function cancelLuckyDrawStrategyA(uint256 luckyDrawNumber) external {
         _cancelLuckyDrawStrategyA(luckyDrawNumber);
     }
 
-    function _cancelLuckyDrawStrategyA(uint256 luckyDrawNumber) internal {
-        address user = msg.sender;
-        require(s_strategyARulesInfos[luckyDrawNumber].admin == user, "only admin can cancel");
-        require(s_strategyARulesInfos[luckyDrawNumber].isOpen, "luckyDraw is alread closed");
-
-        s_strategyARulesInfos[luckyDrawNumber].isOpen = false;
-
-        emit LuckyDraw_StrategyCancled(user, luckyDrawNumber);
-    }
-
-    function checkUserPrizeLuckyDrawStrategyA(uint256 luckyDrawNumber, address user) public view returns (bool) {
+    function checkUserPrizeLuckyDrawStrategyA(uint256 luckyDrawNumber) public view returns (bool) {
         require(s_strategyARulesInfos[luckyDrawNumber].isOpen, "luckyDraw is closed");
         require(s_strategyARulesInfos[luckyDrawNumber].endTime < block.timestamp, "luckyDraw is not ended");
+        address user = msg.sender;
 
         // check user exist
         return s_winners[luckyDrawNumber][user];
@@ -321,10 +303,10 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         emit LuckyDraw_StrategyCancled(user, luckyDrawNumber);
     }
 
-    function checkUserPrizeLuckyDrawStrategyB(uint256 luckyDrawNumber, address user) public view returns (bool) {
+    function checkUserPrizeLuckyDrawStrategyB(uint256 luckyDrawNumber) public view returns (bool) {
         require(s_strategyBRulesInfos[luckyDrawNumber].isOpen, "luckyDraw is closed");
         require(s_strategyBRulesInfos[luckyDrawNumber].endTime < block.timestamp, "luckyDraw is not ended");
-
+        address user = msg.sender;
         // check user exist
         return s_winners[luckyDrawNumber][user];
     }
@@ -431,5 +413,24 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         s_requests[requestId].randomWords = randomWords;
 
         emit LuckyDraw_RandomWordsFulfilled(requestId, randomWords);
+    }
+
+    function _checkInWhitelist(address user, address[] memory whitelist) internal pure returns (bool) {
+        for (uint256 i = 0; i < whitelist.length; i++) {
+            if (whitelist[i] == user) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function _cancelLuckyDrawStrategyA(uint256 luckyDrawNumber) internal {
+        address user = msg.sender;
+        require(s_strategyARulesInfos[luckyDrawNumber].admin == user, "only admin can cancel");
+        require(s_strategyARulesInfos[luckyDrawNumber].isOpen, "luckyDraw is alread closed");
+
+        s_strategyARulesInfos[luckyDrawNumber].isOpen = false;
+
+        emit LuckyDraw_StrategyCancled(user, luckyDrawNumber);
     }
 }
