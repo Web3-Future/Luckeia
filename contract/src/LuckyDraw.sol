@@ -8,10 +8,20 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 contract LuckyDraw is VRFConsumerBaseV2Plus {
     /**
      * ==================
+     *  error
+     * ==================
+     */
+    error LuckyDraw_SetUpLuckyDrawStrategyCustomFaild();
+    error LuckyDraw_OpenAwardsLuckyDrawStrategyCustomFailed();
+
+    /**
+     * ==================
      *  event
      * ==================
      */
     event LuckyDraw_RequestRandomWordsSent(uint256 indexed requestId, uint32 numWords, bool enableNativePayment);
+
+    event LuckyDraw_StrategyCustomSetUp(uint256 indexed luckyDrawNumber, bytes data);
 
     event LuckyDraw_RandomWordsFulfilled(uint256 indexed requestId, uint256[] randomWords);
 
@@ -26,6 +36,8 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
 
     event LuckyDraw_StrategyACancled(address indexed user, uint256 luckyDrawNumber);
 
+    event LuckyDraw_lucyNumberPicked(address indexed user, uint256 luckNumber);
+
     /**
      * ==================
      *  struct
@@ -37,7 +49,12 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         uint256[] randomWords;
     }
 
-    struct LuckyDrawRulesInfo {
+    // struct StrategyBaseRulesInfo {
+    //     address admin;
+    //     bool isOpen; // whether the lucky draw is open
+    // }
+
+    struct StrategyARulesInfo {
         address admin;
         bool isOpen; // whether the lucky draw is open
         uint256 startTime;
@@ -46,6 +63,22 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         address payable[] participants;
         uint8 maxWinners;
         address[] openerWhitelist;
+    }
+
+    struct StrategyBRulesInfo {
+        address admin;
+        bool isOpen; // whether the lucky draw is open
+        uint256 startTime;
+        uint256 endTime;
+        uint256 rechargeAmount;
+        uint8 maxWinners;
+    }
+
+    struct StrategyCustomRulesInfo {
+        address admin;
+        bool isOpen; // whether the lucky draw is open
+        uint256 amount;
+        bytes data; // custom calldata
     }
 
     /**
@@ -77,8 +110,12 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     // LuckyDraw unique number,will always increase
     uint256 private s_numberOfLuckyDraw;
 
-    // key=luckyDrawNumber,value=LuckyDrawRulesInfo
-    mapping(uint256 => LuckyDrawRulesInfo) private s_luckyDrawRulesInfos;
+    // key=luckyDrawNumber,value=StrategyARulesInfo
+    mapping(uint256 => StrategyARulesInfo) private s_strategyARulesInfos;
+
+    mapping(uint256 => StrategyBRulesInfo) private s_strategyBRulesInfos;
+
+    mapping(uint256 => StrategyCustomRulesInfo) private s_strategyCustomRulesInfos;
 
     // key=luckyDrawNumber,value=winners
     mapping(uint256 => mapping(address => bool)) private s_winners;
@@ -123,7 +160,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         // record
         s_numberOfLuckyDraw += s_numberOfLuckyDraw;
 
-        s_luckyDrawRulesInfos[s_numberOfLuckyDraw] = LuckyDrawRulesInfo({
+        s_strategyARulesInfos[s_numberOfLuckyDraw] = StrategyARulesInfo({
             startTime: startTime,
             endTime: endTime,
             amount: amount,
@@ -142,7 +179,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     }
 
     function openAwardsLuckyDrawStrategyA(uint256 luckyDrawNumber) external {
-        LuckyDrawRulesInfo memory luckyDrawRulesInfo = s_luckyDrawRulesInfos[luckyDrawNumber];
+        StrategyARulesInfo memory luckyDrawRulesInfo = s_strategyARulesInfos[luckyDrawNumber];
         require(luckyDrawRulesInfo.isOpen, "luckyDraw is alread closed");
         require(luckyDrawRulesInfo.endTime < block.timestamp, "luckyDraw is not ended");
         require(_checkInWhitelist(msg.sender, luckyDrawRulesInfo.openerWhitelist), "only opener can open");
@@ -171,27 +208,92 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     }
 
     function cancelLuckyDrawStrategyA(uint256 luckyDrawNumber) external {
-        address user = msg.sender;
-        require(s_luckyDrawRulesInfos[luckyDrawNumber].admin == user, "only admin can cancel");
-        require(s_luckyDrawRulesInfos[luckyDrawNumber].isOpen, "luckyDraw is alread closed");
+        _cancelLuckyDrawStrategyCustom(luckyDrawNumber);
+    }
 
-        s_luckyDrawRulesInfos[luckyDrawNumber].isOpen = false;
+    function _cancelLuckyDrawStrategyCustom(uint256 luckyDrawNumber) internal {
+        address user = msg.sender;
+        require(s_strategyARulesInfos[luckyDrawNumber].admin == user, "only admin can cancel");
+        require(s_strategyARulesInfos[luckyDrawNumber].isOpen, "luckyDraw is alread closed");
+
+        s_strategyARulesInfos[luckyDrawNumber].isOpen = false;
 
         emit LuckyDraw_StrategyACancled(user, luckyDrawNumber);
     }
 
     function checkUserPrizeLuckyDrawStrategyA(uint256 luckyDrawNumber, address user) public view returns (bool) {
-        require(s_luckyDrawRulesInfos[luckyDrawNumber].isOpen, "luckyDraw is closed");
-        require(s_luckyDrawRulesInfos[luckyDrawNumber].startTime < block.timestamp, "luckyDraw is not started");
+        require(s_strategyARulesInfos[luckyDrawNumber].isOpen, "luckyDraw is closed");
+        require(s_strategyARulesInfos[luckyDrawNumber].startTime < block.timestamp, "luckyDraw is not started");
 
         // check user exist
         return s_winners[luckyDrawNumber][user];
     }
 
-    // setUpLuckyDraw
-    // pickWinner
-    // prepare
-    // claim
+   
+    /**
+     * ================== StrategyC ==================
+     */
+    function pickLuckNumberStrategyC(uint256 start, uint256 end) external returns (uint256) {
+        require(start > 0, "start number must gt 0");
+        require(start < end, "start number must less than end number");
+
+        uint256 requestId = requestRandomWords(true);
+        uint256[] memory randomWords = s_requests[requestId].randomWords;
+        uint256 luckNumber = randomWords[0] % (end - start) + start;
+
+        emit LuckyDraw_lucyNumberPicked(msg.sender, luckNumber);
+        return luckNumber;
+    }
+
+    /**
+     * ================== StrategyD-custom ==================
+     */
+    function setUpLuckyDrawStrategyCustom(address customStrategyAddress, bytes calldata data)
+        external
+        payable
+        returns (uint256)
+    {
+        uint256 amount = msg.value;
+        require(amount > 0, "amount must be greater than 0");
+
+        // record
+        s_numberOfLuckyDraw += s_numberOfLuckyDraw;
+
+        s_strategyCustomRulesInfos[s_numberOfLuckyDraw] =
+            StrategyCustomRulesInfo({amount: amount, isOpen: true, admin: msg.sender, data: data});
+
+        (bool success,) = customStrategyAddress.delegatecall(data);
+        if (!success) {
+            revert LuckyDraw_SetUpLuckyDrawStrategyCustomFaild();
+        }
+
+        emit LuckyDraw_StrategyCustomSetUp(s_numberOfLuckyDraw, data);
+
+        return s_numberOfLuckyDraw;
+    }
+
+    function openAwardsLuckyDrawStrategyCustom(
+        address customStrategyAddress,
+        uint256 luckyDrawNumber,
+        bytes calldata data
+    ) external {
+        require(s_strategyCustomRulesInfos[luckyDrawNumber].isOpen, "luckyDraw is alread closed");
+
+        (bool success,) = customStrategyAddress.delegatecall(data);
+        if (!success) {
+            revert LuckyDraw_OpenAwardsLuckyDrawStrategyCustomFailed();
+        }
+    }
+
+    function cancelLuckyDrawStrategyCustom(uint256 luckyDrawNumber) external {
+        address user = msg.sender;
+        require(s_strategyCustomRulesInfos[luckyDrawNumber].admin == user, "only admin can cancel");
+        require(s_strategyCustomRulesInfos[luckyDrawNumber].isOpen, "luckyDraw is alread closed");
+
+        s_strategyCustomRulesInfos[luckyDrawNumber].isOpen = false;
+
+        emit LuckyDraw_StrategyACancled(user, luckyDrawNumber);
+    }
 
     /**
      * ==================
