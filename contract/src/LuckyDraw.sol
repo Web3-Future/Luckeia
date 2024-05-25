@@ -34,7 +34,19 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         address[] openerWhitelist
     );
 
-    event LuckyDraw_StrategyACancled(address indexed user, uint256 luckyDrawNumber);
+    event LuckyDraw_StrategyBSetUp(
+        uint256 indexed luckyDrawNumber,
+        uint256 startTime,
+        uint256 endTime,
+        uint256 rechargeAmountPerUser,
+        uint8 maxWinners
+    );
+
+    event LuckyDraw_StrategyBParticipated(
+        uint256 indexed luckyDrawNumber, address indexed participant, uint256 rechargeAmountPerUser
+    );
+
+    event LuckyDraw_StrategyCancled(address indexed user, uint256 luckyDrawNumber);
 
     event LuckyDraw_lucyNumberPicked(address indexed user, uint256 luckNumber);
 
@@ -70,8 +82,9 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         bool isOpen; // whether the lucky draw is open
         uint256 startTime;
         uint256 endTime;
-        uint256 rechargeAmount;
+        uint256 rechargeAmountPerUser;
         uint8 maxWinners;
+        uint256 totalRechargeAmount;
     }
 
     struct StrategyCustomRulesInfo {
@@ -114,6 +127,8 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     mapping(uint256 => StrategyARulesInfo) private s_strategyARulesInfos;
 
     mapping(uint256 => StrategyBRulesInfo) private s_strategyBRulesInfos;
+
+    mapping(uint256 => address[]) private s_strategyBParticipants;
 
     mapping(uint256 => StrategyCustomRulesInfo) private s_strategyCustomRulesInfos;
 
@@ -208,28 +223,112 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     }
 
     function cancelLuckyDrawStrategyA(uint256 luckyDrawNumber) external {
-        _cancelLuckyDrawStrategyCustom(luckyDrawNumber);
+        _cancelLuckyDrawStrategyA(luckyDrawNumber);
     }
 
-    function _cancelLuckyDrawStrategyCustom(uint256 luckyDrawNumber) internal {
+    function _cancelLuckyDrawStrategyA(uint256 luckyDrawNumber) internal {
         address user = msg.sender;
         require(s_strategyARulesInfos[luckyDrawNumber].admin == user, "only admin can cancel");
         require(s_strategyARulesInfos[luckyDrawNumber].isOpen, "luckyDraw is alread closed");
 
         s_strategyARulesInfos[luckyDrawNumber].isOpen = false;
 
-        emit LuckyDraw_StrategyACancled(user, luckyDrawNumber);
+        emit LuckyDraw_StrategyCancled(user, luckyDrawNumber);
     }
 
     function checkUserPrizeLuckyDrawStrategyA(uint256 luckyDrawNumber, address user) public view returns (bool) {
         require(s_strategyARulesInfos[luckyDrawNumber].isOpen, "luckyDraw is closed");
-        require(s_strategyARulesInfos[luckyDrawNumber].startTime < block.timestamp, "luckyDraw is not started");
+        require(s_strategyARulesInfos[luckyDrawNumber].endTime < block.timestamp, "luckyDraw is not ended");
 
         // check user exist
         return s_winners[luckyDrawNumber][user];
     }
 
-   
+    /**
+     * ================== StrategyB ==================
+     */
+    function setUpLuckyDrawStrategyB(
+        uint256 startTime,
+        uint256 endTime,
+        uint256 rechargeAmountPerUser,
+        uint8 maxWinners
+    ) external returns (uint256) {
+        require(startTime > block.timestamp, "startTime must be in the future");
+        require(startTime < endTime, "endTime must be after startTime");
+        require(maxWinners > 0, "maxWinners must be greater than 0");
+        require(rechargeAmountPerUser > 0, "rechargeAmount must be greater than 0");
+
+        s_numberOfLuckyDraw += s_numberOfLuckyDraw;
+
+        s_strategyBRulesInfos[s_numberOfLuckyDraw] = StrategyBRulesInfo({
+            isOpen: true,
+            admin: msg.sender,
+            startTime: startTime,
+            endTime: endTime,
+            rechargeAmountPerUser: rechargeAmountPerUser,
+            maxWinners: maxWinners,
+            totalRechargeAmount: 0
+        });
+
+        emit LuckyDraw_StrategyBSetUp(s_numberOfLuckyDraw, startTime, endTime, rechargeAmountPerUser, maxWinners);
+
+        return s_numberOfLuckyDraw;
+    }
+
+    function participateLuckyDrawStrategyB(uint256 luckyDrawNumber) external payable {
+        StrategyBRulesInfo memory luckyDrawRulesInfo = s_strategyBRulesInfos[luckyDrawNumber];
+        require(luckyDrawRulesInfo.isOpen, "LuckyDraw: LuckyDraw is not open");
+        require(luckyDrawRulesInfo.startTime < block.timestamp, "LuckyDraw: LuckyDraw has not started yet");
+        require(luckyDrawRulesInfo.endTime > block.timestamp, "LuckyDraw: LuckyDraw has ended");
+        require(msg.value == luckyDrawRulesInfo.rechargeAmountPerUser, "recharge amount must be greater than 0");
+
+        s_strategyBParticipants[luckyDrawNumber].push(msg.sender);
+        s_strategyBRulesInfos[luckyDrawNumber].totalRechargeAmount += msg.value;
+
+        emit LuckyDraw_StrategyBParticipated(luckyDrawNumber, msg.sender, luckyDrawRulesInfo.rechargeAmountPerUser);
+    }
+
+    function openAwardsLuckyDrawStrategyB(uint256 luckyDrawNumber) external {
+        StrategyBRulesInfo memory luckyDrawRulesInfo = s_strategyBRulesInfos[luckyDrawNumber];
+        require(luckyDrawRulesInfo.isOpen, "luckyDraw is alread closed");
+        require(luckyDrawRulesInfo.endTime < block.timestamp, "luckyDraw is not ended");
+        require(luckyDrawRulesInfo.admin == msg.sender, "only admin can open");
+
+        uint256 requestId = requestRandomWords(true);
+        address[] memory participants = s_strategyBParticipants[luckyDrawNumber];
+        uint8 maxWinners = luckyDrawRulesInfo.maxWinners > participants.length
+            ? uint8(participants.length)
+            : luckyDrawRulesInfo.maxWinners;
+        uint256[] memory randomWords = s_requests[requestId].randomWords;
+        uint256 firstIndexOfWinner = randomWords[0] % participants.length;
+        // caculate per user rewards
+        uint256 rewardsPerUser = luckyDrawRulesInfo.totalRechargeAmount / maxWinners;
+        for (uint256 i = 0; i < maxWinners; i++) {
+            address winner = participants[firstIndexOfWinner];
+            s_winners[luckyDrawNumber][address(winner)] = true;
+            firstIndexOfWinner += 1;
+            Address.sendValue(payable(winner), rewardsPerUser);
+        }
+    }
+
+    function cancelLuckyDrawStrategyB(uint256 luckyDrawNumber) external {
+        address user = msg.sender;
+        require(s_strategyBRulesInfos[luckyDrawNumber].admin == user, "only admin can cancel");
+        require(s_strategyBRulesInfos[luckyDrawNumber].isOpen, "luckyDraw is alread closed");
+
+        s_strategyBRulesInfos[luckyDrawNumber].isOpen = false;
+
+        emit LuckyDraw_StrategyCancled(user, luckyDrawNumber);
+    }
+
+    function checkUserPrizeLuckyDrawStrategyB(uint256 luckyDrawNumber, address user) public view returns (bool) {
+        require(s_strategyBRulesInfos[luckyDrawNumber].isOpen, "luckyDraw is closed");
+        require(s_strategyBRulesInfos[luckyDrawNumber].endTime < block.timestamp, "luckyDraw is not ended");
+
+        // check user exist
+        return s_winners[luckyDrawNumber][user];
+    }
+
     /**
      * ================== StrategyC ==================
      */
@@ -292,7 +391,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
 
         s_strategyCustomRulesInfos[luckyDrawNumber].isOpen = false;
 
-        emit LuckyDraw_StrategyACancled(user, luckyDrawNumber);
+        emit LuckyDraw_StrategyCancled(user, luckyDrawNumber);
     }
 
     /**
