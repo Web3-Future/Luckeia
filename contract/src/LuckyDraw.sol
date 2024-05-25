@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Test, console} from "forge-std/Test.sol";
 
 contract LuckyDraw is VRFConsumerBaseV2Plus {
     /**
@@ -173,7 +174,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         require(amount > 0, "amount must be greater than 0");
 
         // record
-        s_numberOfLuckyDraw += s_numberOfLuckyDraw;
+        s_numberOfLuckyDraw += 1;
 
         s_strategyARulesInfos[s_numberOfLuckyDraw] = StrategyARulesInfo({
             startTime: startTime,
@@ -240,7 +241,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         require(maxWinners > 0, "maxWinners must be greater than 0");
         require(rechargeAmountPerUser > 0, "rechargeAmount must be greater than 0");
 
-        s_numberOfLuckyDraw += s_numberOfLuckyDraw;
+        s_numberOfLuckyDraw += 1;
 
         s_strategyBRulesInfos[s_numberOfLuckyDraw] = StrategyBRulesInfo({
             isOpen: true,
@@ -432,5 +433,10 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         s_strategyARulesInfos[luckyDrawNumber].isOpen = false;
 
         emit LuckyDraw_StrategyCancled(user, luckyDrawNumber);
+    }
+
+    // mapping(uint256 => StrategyARulesInfo) private s_strategyARulesInfos;
+    function getStrategyARulesInfo(uint256 luckyDrawNumber) external view returns (StrategyARulesInfo memory info) {
+        return s_strategyARulesInfos[luckyDrawNumber];
     }
 }

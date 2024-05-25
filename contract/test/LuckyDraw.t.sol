@@ -33,6 +33,11 @@ contract LuckyDrawTest is Test {
 
     // test setUpLuckyDrawStrategyA
     function test_setUpLuckyDrawStrategyA() public {
+        uint256 numberOfLuckyDraw = _setUpLuckyDrawStrategyA();
+        assertEq(1, numberOfLuckyDraw);
+    }
+
+    function _setUpLuckyDrawStrategyA() internal returns (uint256) {
         vm.startPrank(admin);
         uint256 startTime = block.timestamp + 1 days;
         uint256 endTime = block.timestamp + 3 days;
@@ -50,10 +55,38 @@ contract LuckyDrawTest is Test {
         uint256 numberOfLuckyDraw = luckyDraw.setUpLuckyDrawStrategyA{value: 10 ether}(
             startTime, endTime, participants, maxWinners, openerWhitelist
         );
-        numberOfLuckyDraw = luckyDraw.setUpLuckyDrawStrategyA{value: 10 ether}(
-            startTime, endTime, participants, maxWinners, openerWhitelist
-        );
-        assertEq(1, numberOfLuckyDraw);
+        vm.stopPrank();
+        return numberOfLuckyDraw;
+    }
+
+    function test_cancelLuckyDrawStrategyA() public {
+        uint256 numberOfLuckyDraw = _setUpLuckyDrawStrategyA();
+        vm.startPrank(admin);
+        luckyDraw.cancelLuckyDrawStrategyA(numberOfLuckyDraw);
+        LuckyDraw.StrategyARulesInfo memory info = luckyDraw.getStrategyARulesInfo(numberOfLuckyDraw);
+        assertEq(false, info.isOpen);
         vm.stopPrank();
     }
+
+    // test checkUserPrizeLuckyDrawStrategyA
+    function test_checkUserPrizeLuckyDrawStrategyA() public {
+        uint256 numberOfLuckyDraw = _setUpLuckyDrawStrategyA();
+        vm.warp(block.timestamp + 4 days);
+        vm.startPrank(player1);
+        bool isWin = luckyDraw.checkUserPrizeLuckyDrawStrategyA(numberOfLuckyDraw);
+        assertEq(false, isWin);
+        vm.stopPrank();
+    }
+
+    // // test openAwardsLuckyDrawStrategyA
+    // function test_openAwardsLuckyDrawStrategyA() public {
+    //     uint256 numberOfLuckyDraw = _setUpLuckyDrawStrategyA();
+    //     vm.warp(block.timestamp + 4 days);
+        
+    //     vm.startPrank(opener1);
+    //     luckyDraw.openAwardsLuckyDrawStrategyA(numberOfLuckyDraw);
+    //     LuckyDraw.StrategyARulesInfo memory info = luckyDraw.getStrategyARulesInfo(numberOfLuckyDraw);
+    //     assertEq(true, info.isOpen);
+    //     vm.stopPrank();
+    // }
 }
