@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { headers } from 'next/headers'
+import { Providers } from "./providers"
+
+import { cookieToInitialState } from 'wagmi'
+
+import { config } from '@/config'
+import Web3ModalProvider from '@/context'
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,9 +21,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialState = cookieToInitialState(config, headers().get('cookie'))
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
-    </html>
+    <Web3ModalProvider initialState={initialState}>
+      <html lang="en" className='dark'>
+        <body>
+          <Providers>{children}</Providers>
+        </body>
+      </html>
+    </Web3ModalProvider >
   );
 }
