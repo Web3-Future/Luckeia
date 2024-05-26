@@ -1,43 +1,36 @@
-# Lucky-Chain
+# 作品名称: Luckeia
 
-<p align="center">
-  <img src="./public/imgs/lucky-chain.png" alt="Lucky-Chain Logo" width="250" height="250">
-</p>
+## 作品简介
 
-Lucky-Chain is a decentralized drawing assistant designed to ensure fairness in drawings by utilizing Chainlink's verifiable random functions (VRF). This project supports adding whitelisted participants, making it ideal for exclusive and fair drawings.
+Luckeia 是一个项目样例，你需要在这里填写你的做作品简介（200 字以内）。
 
-## Table of Contents
+## 作品代码仓库
 
-- [Lucky-Chain](#lucky-chain)
-  - [Table of Contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Features](#features)
-  - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
+https://github.com/Web3-Future/Luckeia
 
-## Introduction
+## 黑客松资料
+作品链接：https://devpost.com/software/nft-loan (需要先在 https://chainlinkblockmagic.devpost.com/ 上提交作品，获取预览链接，填在这里)。
 
-Lucky-Chain leverages Chainlink's VRF to generate provably random numbers, ensuring the fairness and transparency of drawing events. By supporting whitelisted participants, it provides a secure and inclusive environment for exclusive drawings.
+## 成员
 
-## Features
+AlanYin
+- 功能设计、合约开发
+- 邮箱：alanyin6@gmail.com
+- Github：https://github.com/xing-yin
 
-- **Fairness:** Utilizes Chainlink VRF for verifiable randomness.
-- **Whitelist Support:** Allows adding specific participants to the whitelist.
-- **Transparency:** Open-source and auditable smart contract.
-- **Decentralization:** Runs on Ethereum, ensuring no single point of failure.
-- **Security:** Built with secure and reliable smart contract practices.
+Noah
+- 前端开发、交互设计
+- 邮箱：upupqi.cs@gmail.com
+- Github：https://github.com/upupnoah
 
-## Getting Started
+老人没有海
+- 合约开发、产品展示
+- 邮箱：piwang1994+web3@gmail.com
+- Github：https://github.com/CryptoMADMAN
 
-To get started with Lucky-Chain, follow these steps.
 
-### Prerequisites
-- Foundry
+## ERC20 地址
 
-### Installation
-Clone the repository and install dependencies:
-- `git clone https://github.com/Web3-Future/lucky-chain.git`
-- `cd contract`
-- `forge install`
-- `forge test`
+- 0x09627a2DD5f54e97e4c974CdeF8ABA793d80Af45
+- 0x3dc121ca82697cb8c2c9d2b151bb6002316ec5a9
+- 0x98De06C0Aa038e7f4D07D95C848c15F841Cb2572
