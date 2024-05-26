@@ -50,17 +50,17 @@ export default function TabsDemo() {
                             <Input id="amount1" type="number" step="0.01" defaultValue="" />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="maxWinners">Max Winners</Label>
-                            <Input id="maxWinners" type="number" defaultValue="" />
+                            <Label htmlFor="maxWinners">Maximum Winners</Label>
+                            <Input id="maxWinners1" type="number" defaultValue="" />
                         </div>
                         <div className="space-y-1">
                             <Label htmlFor="address">Participants</Label>
-                            <Input id="participants" type="text" defaultValue="" placeholder="0x..." />
+                            <Input id="participants1" type="text" defaultValue="" placeholder="0x1, 0x2, ..., etc" />
                         </div>
                     </CardContent>
 
                     <CardFooter>
-                        <Button>Submit</Button>
+                        <Button>Start Draw</Button>
                     </CardFooter>
                 </Card>
             </TabsContent>
@@ -74,16 +74,24 @@ export default function TabsDemo() {
                     </CardHeader>
                     <CardContent className="space-y-2">
                         <div className="space-y-1">
-                            <Label htmlFor="current">Current password</Label>
-                            <Input id="current" type="password" />
+                            <Label htmlFor="participants">Participants</Label>
+                            <Input id="participants2" type="text" placeholder="0x1, 0x2, ..., etc" />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="new">New password</Label>
-                            <Input id="new" type="password" />
+                            <Label htmlFor="rank1">Rank 1</Label>
+                            <Input id="rank1" type="text" disabled />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="rank2">Rank 2</Label>
+                            <Input id="rank2" type="text" disabled />
+                        </div>
+                        <div className="space-y-1">
+                            <Label htmlFor="rank3">Rank 3</Label>
+                            <Input id="rank3" type="text" disabled />
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button>Submit</Button>
+                        <Button>Start Draw</Button>
                     </CardFooter>
                 </Card>
             </TabsContent>
@@ -106,7 +114,7 @@ export default function TabsDemo() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button>Submit</Button>
+                        <Button>Start Draw</Button>
                     </CardFooter>
                 </Card>
             </TabsContent>
@@ -145,7 +153,7 @@ export default function TabsDemo() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button>Submit</Button>
+                        <Button>Start Draw</Button>
                     </CardFooter>
                 </Card>
             </TabsContent>

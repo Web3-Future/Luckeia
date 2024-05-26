@@ -8,7 +8,7 @@ export default function Home() {
         <Navbar className="absolute text-white top-0 z-50 w-full flex items-center">
           <NavbarBrand>
             <AcmeLogo />
-            <p className="font-bold text-inherit">ACME</p>
+            <p className="font-bold text-inherit">Luckeia</p>
           </NavbarBrand>
           <NavbarContent className="hidden sm:flex gap-4" justify="center">
             <NavbarItem>
