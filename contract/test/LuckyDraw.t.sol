@@ -78,15 +78,15 @@ contract LuckyDrawTest is Test {
         vm.stopPrank();
     }
 
-    // // test openAwardsLuckyDrawStrategyA
-    // function test_openAwardsLuckyDrawStrategyA() public {
-    //     uint256 numberOfLuckyDraw = _setUpLuckyDrawStrategyA();
-    //     vm.warp(block.timestamp + 4 days);
+    // test openAwardsLuckyDrawStrategyA
+    function test_openAwardsLuckyDrawStrategyA() public {
+        uint256 numberOfLuckyDraw = _setUpLuckyDrawStrategyA();
+        vm.warp(block.timestamp + 4 days);
         
-    //     vm.startPrank(opener1);
-    //     luckyDraw.openAwardsLuckyDrawStrategyA(numberOfLuckyDraw);
-    //     LuckyDraw.StrategyARulesInfo memory info = luckyDraw.getStrategyARulesInfo(numberOfLuckyDraw);
-    //     assertEq(true, info.isOpen);
-    //     vm.stopPrank();
-    // }
+        vm.startPrank(opener1);
+        luckyDraw.openAwardsLuckyDrawStrategyA(numberOfLuckyDraw);
+        // LuckyDraw.StrategyARulesInfo memory info = luckyDraw.getStrategyARulesInfo(numberOfLuckyDraw);
+        // assertEq(true, info.isOpen);
+        vm.stopPrank();
+    }
 }

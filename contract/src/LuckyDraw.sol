@@ -4,7 +4,6 @@ pragma solidity ^0.8.25;
 import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {Test, console} from "forge-std/Test.sol";
 
 contract LuckyDraw is VRFConsumerBaseV2Plus {
     /**
@@ -43,13 +42,27 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         uint8 maxWinners
     );
 
+    event LuckyDraw_StrategyCSetUp(uint256 indexed luckyDrawNumber, uint256 start, uint256 end);
+
     event LuckyDraw_StrategyBParticipated(
         uint256 indexed luckyDrawNumber, address indexed participant, uint256 rechargeAmountPerUser
     );
 
     event LuckyDraw_StrategyCancled(address indexed user, uint256 luckyDrawNumber);
 
-    event LuckyDraw_lucyNumberPicked(address indexed user, uint256 luckNumber);
+    event LuckyDraw_lucyNumberPicked(address indexed user, uint256 requestId);
+
+    /**
+     * ==================
+     *  enum
+     * ==================
+     */
+    enum StrategyType {
+        StrategyA,
+        StrategyB,
+        StrategyC,
+        StrategyD
+    }
 
     /**
      * ==================
@@ -88,11 +101,27 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         uint256 totalRechargeAmount;
     }
 
+    struct StrategyCRulesInfo {
+        address admin;
+        bool isOpen; // whether the lucky draw is open
+        uint256 start;
+        uint256 end;
+        uint256 luckNumber;
+    }
+
     struct StrategyCustomRulesInfo {
         address admin;
         bool isOpen; // whether the lucky draw is open
         uint256 amount;
         bytes data; // custom calldata
+    }
+
+    struct CandidateWinnerInfo {
+        uint256 luckyDrawNumber;
+        StrategyType strategyType;
+        address payable[] participants;
+        uint256 amount;
+        uint8 maxWinners;
     }
 
     /**
@@ -106,7 +135,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     // Depends on the number of requested values that you want sent to the
     // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
     // so 100,000 is a safe default for this example contract.
-    uint32 public constant CALLBACK_GAS_LIMIT = 100000;
+    uint32 public constant CALLBACK_GAS_LIMIT = 300000;
 
     // For this example, retrieve 2 random values in one request.
     uint32 public constant NUM_WORDS = 2;
@@ -129,12 +158,17 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
 
     mapping(uint256 => StrategyBRulesInfo) private s_strategyBRulesInfos;
 
-    mapping(uint256 => address[]) private s_strategyBParticipants;
+    mapping(uint256 => StrategyCRulesInfo) private s_strategyCRulesInfos;
+
+    mapping(uint256 => address payable[]) private s_strategyBParticipants;
 
     mapping(uint256 => StrategyCustomRulesInfo) private s_strategyCustomRulesInfos;
 
     // key=luckyDrawNumber,value=winners
     mapping(uint256 => mapping(address => bool)) private s_winners;
+
+    // key=requestId, value=CandidateWinnerInfo
+    mapping(uint256 => CandidateWinnerInfo) s_candidateWinnerInfos;
 
     /**
      * ==================
@@ -173,9 +207,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         uint256 amount = msg.value;
         require(amount > 0, "amount must be greater than 0");
 
-        // record
         s_numberOfLuckyDraw += 1;
-
         s_strategyARulesInfos[s_numberOfLuckyDraw] = StrategyARulesInfo({
             startTime: startTime,
             endTime: endTime,
@@ -201,17 +233,14 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         require(_checkInWhitelist(msg.sender, luckyDrawRulesInfo.openerWhitelist), "only opener can open");
 
         uint256 requestId = requestRandomWords(true);
-        uint8 maxWinners = luckyDrawRulesInfo.maxWinners;
-        // caculate per user rewards
-        uint256 rewardsPerUser = luckyDrawRulesInfo.amount / maxWinners;
-        uint256[] memory randomWords = s_requests[requestId].randomWords;
-        uint256 firstIndexOfWinner = randomWords[0] % luckyDrawRulesInfo.participants.length;
-        for (uint256 i = 0; i < maxWinners; i++) {
-            address payable winner = luckyDrawRulesInfo.participants[firstIndexOfWinner];
-            s_winners[luckyDrawNumber][address(winner)] = true;
-            firstIndexOfWinner += 1;
-            Address.sendValue(winner, rewardsPerUser);
-        }
+
+        s_candidateWinnerInfos[requestId] = CandidateWinnerInfo({
+            luckyDrawNumber: luckyDrawNumber,
+            strategyType: StrategyType.StrategyA,
+            participants: luckyDrawRulesInfo.participants,
+            amount: luckyDrawRulesInfo.amount,
+            maxWinners: luckyDrawRulesInfo.maxWinners
+        });
     }
 
     function cancelLuckyDrawStrategyA(uint256 luckyDrawNumber) external {
@@ -265,7 +294,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         require(luckyDrawRulesInfo.endTime > block.timestamp, "LuckyDraw: LuckyDraw has ended");
         require(msg.value == luckyDrawRulesInfo.rechargeAmountPerUser, "recharge amount must be greater than 0");
 
-        s_strategyBParticipants[luckyDrawNumber].push(msg.sender);
+        s_strategyBParticipants[luckyDrawNumber].push(payable(msg.sender));
         s_strategyBRulesInfos[luckyDrawNumber].totalRechargeAmount += msg.value;
 
         emit LuckyDraw_StrategyBParticipated(luckyDrawNumber, msg.sender, luckyDrawRulesInfo.rechargeAmountPerUser);
@@ -277,21 +306,19 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         require(luckyDrawRulesInfo.endTime < block.timestamp, "luckyDraw is not ended");
         require(luckyDrawRulesInfo.admin == msg.sender, "only admin can open");
 
-        uint256 requestId = requestRandomWords(true);
-        address[] memory participants = s_strategyBParticipants[luckyDrawNumber];
+        uint256 requestId = requestRandomWords(false);
+
+        address payable[] memory participants = s_strategyBParticipants[luckyDrawNumber];
         uint8 maxWinners = luckyDrawRulesInfo.maxWinners > participants.length
             ? uint8(participants.length)
             : luckyDrawRulesInfo.maxWinners;
-        uint256[] memory randomWords = s_requests[requestId].randomWords;
-        uint256 firstIndexOfWinner = randomWords[0] % participants.length;
-        // caculate per user rewards
-        uint256 rewardsPerUser = luckyDrawRulesInfo.totalRechargeAmount / maxWinners;
-        for (uint256 i = 0; i < maxWinners; i++) {
-            address winner = participants[firstIndexOfWinner];
-            s_winners[luckyDrawNumber][address(winner)] = true;
-            firstIndexOfWinner += 1;
-            Address.sendValue(payable(winner), rewardsPerUser);
-        }
+        s_candidateWinnerInfos[requestId] = CandidateWinnerInfo({
+            luckyDrawNumber: luckyDrawNumber,
+            strategyType: StrategyType.StrategyB,
+            participants: participants,
+            amount: luckyDrawRulesInfo.totalRechargeAmount,
+            maxWinners: maxWinners
+        });
     }
 
     function cancelLuckyDrawStrategyB(uint256 luckyDrawNumber) external {
@@ -315,16 +342,28 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
     /**
      * ================== StrategyC ==================
      */
-    function pickLuckNumberStrategyC(uint256 start, uint256 end) external returns (uint256) {
+    function pickLuckNumberStrategyC(uint256 start, uint256 end) external {
         require(start > 0, "start number must gt 0");
         require(start < end, "start number must less than end number");
 
-        uint256 requestId = requestRandomWords(true);
-        uint256[] memory randomWords = s_requests[requestId].randomWords;
-        uint256 luckNumber = randomWords[0] % (end - start) + start;
+        s_numberOfLuckyDraw += 1;
+        s_strategyCRulesInfos[s_numberOfLuckyDraw] =
+            StrategyCRulesInfo({start: start, end: end, isOpen: true, admin: msg.sender, luckNumber: 0});
+        emit LuckyDraw_StrategyCSetUp(s_numberOfLuckyDraw, start, end);
 
-        emit LuckyDraw_lucyNumberPicked(msg.sender, luckNumber);
-        return luckNumber;
+        uint256 requestId = requestRandomWords(true);
+        s_candidateWinnerInfos[requestId] = CandidateWinnerInfo({
+            luckyDrawNumber: s_numberOfLuckyDraw,
+            strategyType: StrategyType.StrategyC,
+            participants: new address payable[](0),
+            amount: 0,
+            maxWinners: 0
+        });
+        emit LuckyDraw_lucyNumberPicked(msg.sender, requestId);
+    }
+
+    function viewLuckNumberStrategyC(uint256 luckyDrawNumber) public view returns (uint256) {
+        return s_strategyCRulesInfos[luckyDrawNumber].luckNumber;
     }
 
     /**
@@ -383,6 +422,10 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         emit LuckyDraw_StrategyCancled(user, luckyDrawNumber);
     }
 
+    function getStrategyARulesInfo(uint256 luckyDrawNumber) external view returns (StrategyARulesInfo memory info) {
+        return s_strategyARulesInfos[luckyDrawNumber];
+    }
+
     /**
      * ==================
      *  function internale & private
@@ -414,6 +457,30 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         s_requests[requestId].randomWords = randomWords;
 
         emit LuckyDraw_RandomWordsFulfilled(requestId, randomWords);
+
+        CandidateWinnerInfo memory candidateWinnerInfo = s_candidateWinnerInfos[requestId];
+        if (
+            candidateWinnerInfo.strategyType == StrategyType.StrategyA
+                || candidateWinnerInfo.strategyType == StrategyType.StrategyB
+        ) {
+            uint8 maxWinners = candidateWinnerInfo.maxWinners;
+            // caculate per user rewards
+            uint256 rewardsPerUser = candidateWinnerInfo.amount / maxWinners;
+            uint256 firstIndexOfWinner = randomWords[0] % candidateWinnerInfo.participants.length;
+            uint256 luckyDrawNumber = candidateWinnerInfo.luckyDrawNumber;
+            for (uint256 i = 0; i < maxWinners; i++) {
+                address payable winner = candidateWinnerInfo.participants[firstIndexOfWinner];
+                s_winners[luckyDrawNumber][address(winner)] = true;
+                firstIndexOfWinner += 1;
+                Address.sendValue(winner, rewardsPerUser);
+            }
+        } else if (candidateWinnerInfo.strategyType == StrategyType.StrategyC) {
+            //todo
+            StrategyCRulesInfo memory strategyCRulesInfo = s_strategyCRulesInfos[candidateWinnerInfo.luckyDrawNumber];
+            uint256 luckNumber =
+                randomWords[0] % (strategyCRulesInfo.end - strategyCRulesInfo.start) + strategyCRulesInfo.start;
+            s_strategyCRulesInfos[candidateWinnerInfo.luckyDrawNumber].luckNumber = luckNumber;
+        }
     }
 
     function _checkInWhitelist(address user, address[] memory whitelist) internal pure returns (bool) {
@@ -433,10 +500,5 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
         s_strategyARulesInfos[luckyDrawNumber].isOpen = false;
 
         emit LuckyDraw_StrategyCancled(user, luckyDrawNumber);
-    }
-
-    // mapping(uint256 => StrategyARulesInfo) private s_strategyARulesInfos;
-    function getStrategyARulesInfo(uint256 luckyDrawNumber) external view returns (StrategyARulesInfo memory info) {
-        return s_strategyARulesInfos[luckyDrawNumber];
     }
 }
