@@ -18,7 +18,11 @@ import {
     TabsTrigger,
 } from "@/components/ui/tabs"
 
+
 export default function TabsDemo() {
+    function handleClick() {
+        alert(1);
+    }
     const [address, setAddress] = useState('');
 
     const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,17 +35,17 @@ export default function TabsDemo() {
     return (
         <Tabs defaultValue="s1" className="w-[400px]">
             <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="s1">s1</TabsTrigger>
-                <TabsTrigger value="s2">s2</TabsTrigger>
-                <TabsTrigger value="s3">s3</TabsTrigger>
-                <TabsTrigger value="c1">Customized</TabsTrigger>
+                <TabsTrigger value="s1">Random Prize</TabsTrigger>
+                <TabsTrigger value="s2">Lucky List</TabsTrigger>
+                <TabsTrigger value="s3">Lucky Num</TabsTrigger>
+                <TabsTrigger value="c1">Custom</TabsTrigger>
             </TabsList>
             <TabsContent value="s1">
                 <Card>
                     <CardHeader>
                         {/* <CardTitle>Account</CardTitle> */}
                         <CardDescription>
-                            规则 1
+                            Enter the total amount, number of winners, and addresses. The system generates a winner list and directly sends the token to the winners. 🍀
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
@@ -60,7 +64,7 @@ export default function TabsDemo() {
                     </CardContent>
 
                     <CardFooter>
-                        <Button>Start Draw</Button>
+                        <Button onClick={handleClick}>Start Draw</Button>
                     </CardFooter>
                 </Card>
             </TabsContent>
@@ -69,25 +73,18 @@ export default function TabsDemo() {
                     <CardHeader>
                         {/* <CardTitle>s2</CardTitle> */}
                         <CardDescription>
-                            规则 2
+                            Enter number of winners, and addresses. The system generates ranked  winner list.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
+
                         <div className="space-y-1">
-                            <Label htmlFor="participants">Participants</Label>
-                            <Input id="participants2" type="text" placeholder="0x1, 0x2, ..., etc" />
+                            <Label htmlFor="maxWinners">Maximum Winners</Label>
+                            <Input id="maxWinners2" type="number" defaultValue="" />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="rank1">Rank 1</Label>
-                            <Input id="rank1" type="text" disabled />
-                        </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="rank2">Rank 2</Label>
-                            <Input id="rank2" type="text" disabled />
-                        </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="rank3">Rank 3</Label>
-                            <Input id="rank3" type="text" disabled />
+                            <Label htmlFor="address">Participants</Label>
+                            <Input id="participants2" type="text" defaultValue="" placeholder="0x1, 0x2, ..., etc" />
                         </div>
                     </CardContent>
                     <CardFooter>
@@ -100,17 +97,17 @@ export default function TabsDemo() {
                     <CardHeader>
                         {/* <CardTitle>s3</CardTitle> */}
                         <CardDescription>
-                            策略 3
+                            Enter a range of numbers. The system generates one lucky number.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
                         <div className="space-y-1">
-                            <Label htmlFor="current">Current password</Label>
-                            <Input id="current" type="password1" />
+                            <Label htmlFor="start">Start Number</Label>
+                            <Input id="start" type="number" />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="new">New password</Label>
-                            <Input id="new" type="password1" />
+                            <Label htmlFor="end">End Number</Label>
+                            <Input id="end" type="number" />
                         </div>
                     </CardContent>
                     <CardFooter>
@@ -121,35 +118,19 @@ export default function TabsDemo() {
             <TabsContent value="c1">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Customized</CardTitle>
+                        <CardTitle>Custom</CardTitle>
                         <CardDescription>
-                            自定义策略
+                            Custom strategy
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
                         <div className="space-y-1">
-                            <Label htmlFor="current">Current password</Label>
-                            <Input id="current" type="Customized" />
+                            <Label htmlFor="contractAddress">Contract Address</Label>
+                            <Input id="contractAddress" type="text" placeholder="0x..." />
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="new">New password</Label>
-                            <Input id="new" type="Customized" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="current">Current password</Label>
-                            <Input id="current" type="Customized" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="new">New password</Label>
-                            <Input id="new" type="Customized" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="current">Current password</Label>
-                            <Input id="current" type="Customized" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label htmlFor="new">New password</Label>
-                            <Input id="new" type="Customized" />
+                            <Label htmlFor="functions">Functions(coming soon)</Label>
+                            <Input id="functions" type="text" placeholder="Parse ABI through address." />
                         </div>
                     </CardContent>
                     <CardFooter>

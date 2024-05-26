@@ -6,10 +6,14 @@ export default function Home() {
     <main className="">
       <div className="w-full h-[100vh]">
         <Navbar className="absolute text-white top-0 z-50 w-full flex items-center">
-          <NavbarBrand>
-            <AcmeLogo />
-            <p className="font-bold text-inherit">Luckeia</p>
-          </NavbarBrand>
+        <Link href="/" >
+            <a>
+              <NavbarBrand>
+                <AcmeLogo />
+                <p className="font-bold text-inherit">Luckeia</p>
+              </NavbarBrand>
+            </a>
+          </Link>
           <NavbarContent className="hidden sm:flex gap-4" justify="center">
             <NavbarItem>
               <Link color="foreground" href="/draw">
