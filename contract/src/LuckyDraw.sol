@@ -50,7 +50,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
 
     event LuckyDraw_StrategyCancled(address indexed user, uint256 luckyDrawNumber);
 
-    event LuckyDraw_lucyNumberPicked(address indexed user, uint256 requestId);
+    event LuckyDraw_lucyNumberPicked(address indexed user, uint256 indexed luckyDrawNumber, uint256 requestId);
 
     /**
      * ==================
@@ -359,7 +359,7 @@ contract LuckyDraw is VRFConsumerBaseV2Plus {
             amount: 0,
             maxWinners: 0
         });
-        emit LuckyDraw_lucyNumberPicked(msg.sender, requestId);
+        emit LuckyDraw_lucyNumberPicked(msg.sender, s_numberOfLuckyDraw, requestId);
     }
 
     function viewLuckNumberStrategyC(uint256 luckyDrawNumber) public view returns (uint256) {
