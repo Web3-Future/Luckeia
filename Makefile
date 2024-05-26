@@ -1,7 +1,7 @@
 # Makefile for Lucky-Chain
 
 # Variables
-REPO_URL = https://github.com/Web3-Future/lucky-chain.git
+REPO_URL = https://github.com/Web3-Future/Luckeia.git
 DIR = contract
 
 .PHONY: all clone install compile deploy clean

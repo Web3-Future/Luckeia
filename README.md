@@ -2,13 +2,14 @@
 
 ## 作品简介
 
-Luckeia 是一个项目样例，你需要在这里填写你的做作品简介（200 字以内）。
+Luckeia 正在通过基于区块链的平台彻底改变抽奖体验，该平台提供无与伦比的透明度、随机性和可定制性。 我们的平台确保每一次抽奖都是公平的、防篡改的，并且可以通过公共合约代码和 Merkle 树验证轻松验证。 Luckeia 拥有多种预设和可定制的抽奖策略，可以满足不同的抽奖场景，并允许组织通过独特的 UI 打造定制体验。未来的增强功能包括多链支持和无缝 Web2 集成，使 Luckeia 成为市场上最容易访问和最值得信赖的抽奖平台。
 
 ## 作品代码仓库
 
 https://github.com/Web3-Future/Luckeia
 
 ## 黑客松资料
+
 作品链接：https://devpost.com/software/nft-loan (需要先在 https://chainlinkblockmagic.devpost.com/ 上提交作品，获取预览链接，填在这里)。
 
 ## 成员
