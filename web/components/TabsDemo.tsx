@@ -21,7 +21,7 @@ import {
 
 export default function TabsDemo() {
     function handleClick() {
-        alert(1);
+        // alert(1);
     }
     const [address, setAddress] = useState('');
 
@@ -33,15 +33,16 @@ export default function TabsDemo() {
     };
 
     return (
-        <Tabs defaultValue="s1" className="w-[400px]">
-            <TabsList className="grid w-full grid-cols-4">
+        <div className="opacity-90">
+        <Tabs defaultValue="s1" className="w-[400px] ">
+            <TabsList className="grid w-full grid-cols-4 ">
                 <TabsTrigger value="s1">Random Prize</TabsTrigger>
                 <TabsTrigger value="s2">Lucky List</TabsTrigger>
                 <TabsTrigger value="s3">Lucky Num</TabsTrigger>
                 <TabsTrigger value="c1">Custom</TabsTrigger>
             </TabsList>
-            <TabsContent value="s1">
-                <Card>
+            <TabsContent  value="s1">
+                <Card >
                     <CardHeader>
                         {/* <CardTitle>Account</CardTitle> */}
                         <CardDescription>
@@ -139,5 +140,6 @@ export default function TabsDemo() {
                 </Card>
             </TabsContent>
         </Tabs>
+        </div>
     )
 }
