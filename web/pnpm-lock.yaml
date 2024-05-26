@@ -38,6 +38,9 @@ importers:
       '@web3modal/wagmi':
         specifier: ^4.2.2
         version: 4.2.2(@types/react@18.3.3)(@wagmi/connectors@5.0.6(@types/react@18.3.3)(@wagmi/core@2.10.4(@tanstack/query-core@5.38.0)(@types/react@18.3.3)(bufferutil@4.0.8)(react@18.3.1)(typescript@5.4.5)(viem@2.12.3(bufferutil@4.0.8)(typescript@5.4.5)(zod@3.22.4))(zod@3.22.4))(bufferutil@4.0.8)(react-dom@18.3.1(react@18.3.1))(react-i18next@13.5.0(i18next@22.5.1)(react-dom@18.3.1(react@18.3.1))(react-native@0.74.1(@babel/core@7.24.6)(@babel/preset-env@7.24.6(@babel/core@7.24.6))(@types/react@18.3.3)(bufferutil@4.0.8)(react@18.3.1))(react@18.3.1))(react-native@0.74.1(@babel/core@7.24.6)(@babel/preset-env@7.24.6(@babel/core@7.24.6))(@types/react@18.3.3)(bufferutil@4.0.8)(react@18.3.1))(react@18.3.1)(typescript@5.4.5)(viem@2.12.3(bufferutil@4.0.8)(typescript@5.4.5)(zod@3.22.4))(zod@3.22.4))(@wagmi/core@2.10.4(@tanstack/query-core@5.38.0)(@types/react@18.3.3)(bufferutil@4.0.8)(react@18.3.1)(typescript@5.4.5)(viem@2.12.3(bufferutil@4.0.8)(typescript@5.4.5)(zod@3.22.4))(zod@3.22.4))(bufferutil@4.0.8)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(viem@2.12.3(bufferutil@4.0.8)(typescript@5.4.5)(zod@3.22.4))
+      accordion:
+        specifier: link:@shadcn/ui/accordion
+        version: link:@shadcn/ui/accordion
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.0

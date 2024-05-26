@@ -1,5 +1,4 @@
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Link, Button, Spacer } from "@nextui-org/react";
-import { AcmeLogo } from "../../public/LuckyChainLogo.jsx";
+
 import TabsDemo from "../../components/TabsDemo"
 export default function Home() {
   return (

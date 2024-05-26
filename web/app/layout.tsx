@@ -42,6 +42,11 @@ export default function RootLayout({
                     Draw
                   </Link>
                 </NavbarItem>
+                <NavbarItem>
+                  <Link color="foreground" href="/roadmap">
+                    Roadmap
+                  </Link>
+                </NavbarItem>
                 <NavbarItem isActive>
                   <Link href="/about" aria-current="page">
                     About
